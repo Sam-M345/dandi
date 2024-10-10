@@ -29,7 +29,8 @@ export default function APIKeyManagement() {
       console.log("Attempting to create new key");
       const newKey = {
         name: newKeyName.trim(),
-        key: 'tvly-' + Math.random().toString(36).substr(2, 32)
+        value: 'tvly-' + Math.random().toString(36).substr(2, 32),
+        usage: 0
       };
       console.log("New key object:", newKey);
       try {
@@ -39,6 +40,7 @@ export default function APIKeyManagement() {
           .select();
         if (error) {
           console.error('Error creating API key:', error);
+          console.error('Error details:', JSON.stringify(error, null, 2));
         } else {
           console.log("API key created successfully:", data);
           setApiKeys([...apiKeys, data[0]]);
@@ -47,6 +49,7 @@ export default function APIKeyManagement() {
         }
       } catch (error) {
         console.error('Exception when creating API key:', error);
+        console.error('Exception details:', JSON.stringify(error, null, 2));
       }
     } else {
       console.log("New key name is empty");
