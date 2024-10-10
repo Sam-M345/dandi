@@ -114,6 +114,15 @@ export default function APIKeyManagement() {
     }));
   };
 
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(() => {
+      // Optionally, you can add some visual feedback here
+      console.log('Copied to clipboard');
+    }, (err) => {
+      console.error('Could not copy text: ', err);
+    });
+  };
+
   return (
     <main className="min-h-screen p-8 bg-gray-100">
       <h1 className="text-3xl font-bold mb-8">Overview</h1>
@@ -165,7 +174,7 @@ export default function APIKeyManagement() {
                 <td className="py-3">{apiKey.name}</td>
                 <td className="py-3">0</td>
                 <td className="py-3">
-                  {visibleKeys[apiKey.id] ? apiKey.key : 'tvly-********************************'}
+                  {visibleKeys[apiKey.id] ? apiKey.value : 'tvly-********************************'}
                 </td>
                 <td className="py-3 flex space-x-2">
                   <button 
@@ -174,7 +183,12 @@ export default function APIKeyManagement() {
                   >
                     {visibleKeys[apiKey.id] ? '🙈' : '👁️'}
                   </button>
-                  <button className="text-gray-500 hover:text-gray-700">📋</button>
+                  <button 
+                    onClick={() => copyToClipboard(apiKey.value)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    📋
+                  </button>
                   <button 
                     onClick={() => handleEdit(apiKey.id)}
                     className="text-gray-500 hover:text-gray-700"
