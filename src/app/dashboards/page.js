@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
 
 export default function APIKeyManagement() {
   const [apiKeys, setApiKeys] = useState([]);
@@ -9,23 +10,51 @@ export default function APIKeyManagement() {
   const [editingKey, setEditingKey] = useState(null);
   const [visibleKeys, setVisibleKeys] = useState({});
 
-  const handleCreateKey = () => {
-    if (editingKey) {
-      handleUpdate();
-    } else if (newKeyName.trim()) {
+  useEffect(() => {
+    fetchApiKeys();
+  }, []);
+
+  async function fetchApiKeys() {
+    const { data, error } = await supabase
+      .from('api_keys')
+      .select('*');
+    if (error) console.error('Error fetching API keys:', error);
+    else setApiKeys(data);
+  }
+
+  const handleCreateKey = async () => {
+    console.log("handleCreateKey called");
+    console.log("newKeyName:", newKeyName);
+    if (newKeyName.trim()) {
+      console.log("Attempting to create new key");
       const newKey = {
-        id: Date.now(),
         name: newKeyName.trim(),
         key: 'tvly-' + Math.random().toString(36).substr(2, 32)
       };
-      setApiKeys([...apiKeys, newKey]);
-      setNewKeyName('');
-      setIsEnteringValue(false);
+      console.log("New key object:", newKey);
+      try {
+        const { data, error } = await supabase
+          .from('api_keys')
+          .insert([newKey])
+          .select();
+        if (error) {
+          console.error('Error creating API key:', error);
+        } else {
+          console.log("API key created successfully:", data);
+          setApiKeys([...apiKeys, data[0]]);
+          setNewKeyName('');
+          setIsEnteringValue(false);
+        }
+      } catch (error) {
+        console.error('Exception when creating API key:', error);
+      }
+    } else {
+      console.log("New key name is empty");
     }
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && isEnteringValue) {
+    if (e.key === 'Enter') {
       handleCreateKey();
     }
   };
@@ -40,22 +69,39 @@ export default function APIKeyManagement() {
     }
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (editingKey && newKeyName.trim() && newKeyValue.trim()) {
-      const updatedKeys = apiKeys.map(key => 
-        key.id === editingKey.id ? { ...key, name: newKeyName.trim(), key: newKeyValue.trim() } : key
-      );
-      setApiKeys(updatedKeys);
-      setEditingKey(null);
-      setNewKeyName('');
-      setNewKeyValue('');
-      setIsEnteringValue(false);
+      const { data, error } = await supabase
+        .from('api_keys')
+        .update({ name: newKeyName.trim(), key: newKeyValue.trim() })
+        .eq('id', editingKey.id)
+        .select();
+      if (error) {
+        console.error('Error updating API key:', error);
+      } else {
+        const updatedKeys = apiKeys.map(key => 
+          key.id === editingKey.id ? data[0] : key
+        );
+        setApiKeys(updatedKeys);
+        setEditingKey(null);
+        setNewKeyName('');
+        setNewKeyValue('');
+        setIsEnteringValue(false);
+      }
     }
   };
 
-  const handleDelete = (id) => {
-    const updatedKeys = apiKeys.filter(key => key.id !== id);
-    setApiKeys(updatedKeys);
+  const handleDelete = async (id) => {
+    const { error } = await supabase
+      .from('api_keys')
+      .delete()
+      .eq('id', id);
+    if (error) {
+      console.error('Error deleting API key:', error);
+    } else {
+      const updatedKeys = apiKeys.filter(key => key.id !== id);
+      setApiKeys(updatedKeys);
+    }
   };
 
   const toggleKeyVisibility = (id) => {
@@ -149,7 +195,7 @@ export default function APIKeyManagement() {
       {isEnteringValue && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg w-96">
-            <h2 className="text-xl font-semibold mb-4">{editingKey ? 'Edit API Key' : 'Add New API Key'}</h2>
+            <h2 className="text-xl font-semibold mb-4">Add New API Key</h2>
             <input
               type="text"
               value={newKeyName}
@@ -173,7 +219,7 @@ export default function APIKeyManagement() {
                 onClick={handleCreateKey}
                 className="px-4 py-2 bg-blue-500 text-white rounded"
               >
-                {editingKey ? 'Update' : 'Create'}
+                Create
               </button>
             </div>
           </div>
