@@ -9,6 +9,10 @@ export default function APIKeyManagement() {
   const [isEnteringValue, setIsEnteringValue] = useState(false);
   const [editingKey, setEditingKey] = useState(null);
   const [visibleKeys, setVisibleKeys] = useState({});
+  const [copiedKeyId, setCopiedKeyId] = useState(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editName, setEditName] = useState('');
 
   useEffect(() => {
     fetchApiKeys();
@@ -29,7 +33,7 @@ export default function APIKeyManagement() {
       console.log("Attempting to create new key");
       const newKey = {
         name: newKeyName.trim(),
-        value: 'tvly-' + Math.random().toString(36).substr(2, 32),
+        value: 'dandi-' + Math.random().toString(36).substr(2, 32),
         usage: 0
       };
       console.log("New key object:", newKey);
@@ -62,36 +66,34 @@ export default function APIKeyManagement() {
     }
   };
 
-  const handleEdit = (id) => {
-    const keyToEdit = apiKeys.find(key => key.id === id);
+  const handleEdit = (keyId) => {
+    console.log('Editing key ID:', keyId);
+    const keyToEdit = apiKeys.find(key => key.id === keyId);
+    console.log('Full key object:', JSON.stringify(keyToEdit, null, 2));
+    
     if (keyToEdit) {
       setEditingKey(keyToEdit);
-      setNewKeyName(keyToEdit.name);
-      setNewKeyValue(keyToEdit.key);
-      setIsEnteringValue(true);
+      setEditName(keyToEdit.name || '');
+      setEditModalOpen(true);
+    } else {
+      console.error('Key not found');
     }
   };
 
-  const handleUpdate = async () => {
-    if (editingKey && newKeyName.trim() && newKeyValue.trim()) {
-      const { data, error } = await supabase
-        .from('api_keys')
-        .update({ name: newKeyName.trim(), key: newKeyValue.trim() })
-        .eq('id', editingKey.id)
-        .select();
-      if (error) {
-        console.error('Error updating API key:', error);
-      } else {
-        const updatedKeys = apiKeys.map(key => 
-          key.id === editingKey.id ? data[0] : key
-        );
-        setApiKeys(updatedKeys);
-        setEditingKey(null);
-        setNewKeyName('');
-        setNewKeyValue('');
-        setIsEnteringValue(false);
-      }
+  const handleSaveKey = (formData) => {
+    if (editingKey) {
+      // Update existing key
+      const updatedKeys = apiKeys.map(key => 
+        key.id === editingKey.id ? { ...key, ...formData } : key
+      );
+      setApiKeys(updatedKeys);
+    } else {
+      // Create new key
+      const newKey = { id: Date.now(), ...formData };
+      setApiKeys([...apiKeys, newKey]);
     }
+    setEditModalOpen(false);
+    setEditingKey(null);
   };
 
   const handleDelete = async (id) => {
@@ -114,13 +116,34 @@ export default function APIKeyManagement() {
     }));
   };
 
-  const copyToClipboard = (text) => {
+  const copyToClipboard = (text, id) => {
     navigator.clipboard.writeText(text).then(() => {
-      // Optionally, you can add some visual feedback here
-      console.log('Copied to clipboard');
+      console.log('Copied key id:', id);
+      setCopiedKeyId(id);
+      setTimeout(() => {
+        setCopiedKeyId(null);
+        console.log('Reset copied key id');
+      }, 2000);
     }, (err) => {
       console.error('Could not copy text: ', err);
     });
+  };
+
+  const handleUpdateKey = () => {
+    console.log('Updating key:', editingKey, 'with new name:', editName);
+    if (editingKey) {
+      const updatedKeys = apiKeys.map(key => 
+        key.id === editingKey.id ? { ...key, name: editName } : key
+      );
+      console.log('Updated keys:', updatedKeys);
+      setApiKeys(updatedKeys);
+      setEditModalOpen(false);
+      setEditingKey(null);
+      setEditName('');
+      
+      // If you're using an API to update the key, add the API call here
+      // updateKeyInDatabase(editingKey.id, editName);
+    }
   };
 
   return (
@@ -174,7 +197,7 @@ export default function APIKeyManagement() {
                 <td className="py-3">{apiKey.name}</td>
                 <td className="py-3">0</td>
                 <td className="py-3">
-                  {visibleKeys[apiKey.id] ? apiKey.value : 'tvly-********************************'}
+                  {visibleKeys[apiKey.id] ? apiKey.value : 'dandi-********************************'}
                 </td>
                 <td className="py-3 flex space-x-2">
                   <button 
@@ -184,22 +207,53 @@ export default function APIKeyManagement() {
                     {visibleKeys[apiKey.id] ? '🙈' : '👁️'}
                   </button>
                   <button 
-                    onClick={() => copyToClipboard(apiKey.value)}
-                    className="text-gray-500 hover:text-gray-700"
+                    onClick={() => copyToClipboard(apiKey.value, apiKey.id)}
+                    className="text-gray-500 hover:text-gray-700 relative"
                   >
                     📋
+                    {copiedKeyId === apiKey.id && (
+                      <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 mb-2 transition-opacity duration-300">
+                        Copied!
+                      </span>
+                    )}
                   </button>
+                  <button 
+                    onClick={() => setDeleteConfirmation(apiKey.id)}
+                    className="text-gray-500 hover:text-gray-700 relative"
+                  >
+                    🗑️
+                  </button>
+
+                  {deleteConfirmation === apiKey.id && (
+                    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
+                      <div className="bg-white p-5 rounded-lg shadow-xl">
+                        <h2 className="text-xl font-bold mb-4 text-red-600">Warning</h2>
+                        <p className="mb-4">Are you sure you want to delete this API key?</p>
+                        <div className="flex justify-end space-x-2">
+                          <button 
+                            onClick={() => setDeleteConfirmation(null)} 
+                            className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                          >
+                            Cancel
+                          </button>
+                          <button 
+                            onClick={() => {
+                              handleDelete(apiKey.id);
+                              setDeleteConfirmation(null);
+                            }} 
+                            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <button 
                     onClick={() => handleEdit(apiKey.id)}
                     className="text-gray-500 hover:text-gray-700"
                   >
                     ✏️
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(apiKey.id)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    🗑️
                   </button>
                 </td>
               </tr>
@@ -237,6 +291,42 @@ export default function APIKeyManagement() {
                 className="px-4 py-2 bg-blue-500 text-white rounded"
               >
                 Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {editModalOpen && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
+          <div className="bg-white p-5 rounded-lg shadow-xl">
+            <h2 className="text-xl font-bold mb-4">Edit Name</h2>
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => {
+                console.log('Editing name:', e.target.value);
+                setEditName(e.target.value);
+              }}
+              className="w-full p-2 border border-gray-300 rounded mb-4"
+            />
+            <div className="flex justify-end space-x-2">
+              <button 
+                onClick={() => {
+                  setEditModalOpen(false);
+                  setEditingKey(null);
+                }} 
+                className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  console.log('Update button clicked');
+                  handleUpdateKey();
+                }} 
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 cursor-pointer"
+              >
+                Update
               </button>
             </div>
           </div>
