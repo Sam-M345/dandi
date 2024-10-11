@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
 export default function APIKeyManagement() {
@@ -13,10 +13,24 @@ export default function APIKeyManagement() {
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editName, setEditName] = useState('');
+  const inputRef = useRef(null);
+  const editInputRef = useRef(null);
 
   useEffect(() => {
     fetchApiKeys();
   }, []);
+
+  useEffect(() => {
+    if (isEnteringValue && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isEnteringValue]);
+
+  useEffect(() => {
+    if (editModalOpen && editInputRef.current) {
+      editInputRef.current.focus();
+    }
+  }, [editModalOpen]);
 
   async function fetchApiKeys() {
     const { data, error } = await supabase
@@ -62,7 +76,12 @@ export default function APIKeyManagement() {
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
-      handleCreateKey();
+      e.preventDefault(); // Prevent form submission
+      if (editingKey) {
+        handleUpdateKey();
+      } else {
+        handleCreateKey();
+      }
     }
   };
 
@@ -172,7 +191,7 @@ export default function APIKeyManagement() {
           <h2 className="text-xl font-semibold">API Keys</h2>
           <button 
             onClick={() => setIsEnteringValue(true)}
-            className="text-blue-500 hover:text-blue-700"
+            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
           >
             + Add New Key
           </button>
@@ -268,6 +287,7 @@ export default function APIKeyManagement() {
           <div className="bg-white p-6 rounded-lg w-96">
             <h2 className="text-xl font-semibold mb-4">Add New API Key</h2>
             <input
+              ref={inputRef}
               type="text"
               value={newKeyName}
               onChange={(e) => setNewKeyName(e.target.value)}
@@ -301,12 +321,14 @@ export default function APIKeyManagement() {
           <div className="bg-white p-5 rounded-lg shadow-xl">
             <h2 className="text-xl font-bold mb-4">Edit Name</h2>
             <input
+              ref={editInputRef}
               type="text"
               value={editName}
               onChange={(e) => {
                 console.log('Editing name:', e.target.value);
                 setEditName(e.target.value);
               }}
+              onKeyPress={handleKeyPress}
               className="w-full p-2 border border-gray-300 rounded mb-4"
             />
             <div className="flex justify-end space-x-2">
