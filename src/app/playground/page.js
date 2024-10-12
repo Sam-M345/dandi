@@ -35,7 +35,7 @@ export default function Playground() {
 
   return (
     <div className="p-4">
-      <h2 className="text-2xl font-bold mb-4">API Playground</h2>
+      <h2 className="text-2xl font-bold mb-4">API Playground 2</h2>
       <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
         <div className="relative">
           <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 mb-1">
