@@ -57,9 +57,7 @@ export default function Playground() {
               className="px-3 py-2 border border-gray-300 border-l-0 rounded-r-md shadow-sm text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               title="Clear API Key"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8.086 2.207a2 2 0 0 1 2.828 0l3.879 3.879a2 2 0 0 1 0 2.828l-5.5 5.5A2 2 0 0 1 7.879 15H5.12a2 2 0 0 1-1.414-.586l-2.5-2.5a2 2 0 0 1 0-2.828l6.879-6.879zm.66 11.34L3.453 8.254 1.914 9.793a1 1 0 0 0 0 1.414l2.5 2.5a1 1 0 0 0 .707.293H7.88a1 1 0 0 0 .707-.293l5.5-5.5a1 1 0 0 0 0-1.414L10.415 3.207a1 1 0 0 0-1.414 0L8.746 3.46 13.793 8.5l-1.647 1.646a.5.5 0 0 1-.708 0L8.746 7.455l-2.293 2.293a.5.5 0 0 1 0 .708l2.293 2.293z" clipRule="evenodd" />
-              </svg>
+              X
             </button>
           </div>
         </div>
@@ -81,4 +79,5 @@ export default function Playground() {
 
 
 // just a comment 123  4
+
 
